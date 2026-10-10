@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>From sand to working ground · Scroll cinema template</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+/* =====================================================================
+   THEME — the only block a brand change should need to touch.
+   Cinematic pages are dark by design; the same tokens are restated for
+   the light/dark hooks the claude.ai viewer may set.
+   ===================================================================== */
+:root{
+  --bg:#0A0B0A; --bg-2:#163026;
+  --ink:#F1EEE4; --ink-2:#C9CEC6; --ink-3:#8E9A91;
+  --accent:#3DAE5A; --accent-ink:#0A0B0A;
+  --line:rgba(241,238,228,.14); --line-2:rgba(241,238,228,.34);
+  --panel:rgba(10,11,10,.80);
+  --font-display:"Space Grotesk", Arial, sans-serif;
+  --font-body:"Inter", Arial, sans-serif;
+  --gutter:clamp(18px,3vw,36px);
+  --header-h:64px;
+  color-scheme:dark;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0A0B0A; --ink:#F1EEE4; } }
+:root[data-theme="dark"]{ --bg:#0A0B0A; --ink:#F1EEE4; }
+
+/* safe areas (phones draw edge to edge under the system bars) */
+:root{ box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px); }
+html{ scroll-padding-top:env(safe-area-inset-top,0px); }
+*,*:before,*:after{ box-sizing:border-box; }
+body{ margin:0; background:var(--bg); color:var(--ink); font-family:var(--font-body); font-weight:400;
+  -webkit-font-smoothing:antialiased; overflow-x:hidden; }
+button{ font:inherit; color:inherit; }
+
+/* =====================================================================
+   LAYER STACK — every fixed layer owns a zone; nothing shares a zone.
+   0 scene · 1 veil · 5 labels · 6 opening · 8 hud · 10 rail · 12 header · 14 cut · 20 reader
+   ===================================================================== */
+#scene{ position:fixed; inset:0; z-index:0; }
+#scene canvas{ display:block; width:100%; height:100%; }
+#veil{ position:fixed; inset:0; z-index:1; pointer-events:none; background:
+  linear-gradient(to bottom, rgba(10,11,10,.78) 0%, rgba(10,11,10,0) 18%),
+  linear-gradient(to top, rgba(10,11,10,.90) 0%, rgba(10,11,10,.45) 26%, rgba(10,11,10,0) 52%),
+  linear-gradient(to right, rgba(10,11,10,.62) 0%, rgba(10,11,10,0) 42%); }
+#cut{ position:fixed; inset:0; z-index:14; background:var(--bg); opacity:0; pointer-events:none; }
+#track{ position:relative; z-index:2; pointer-events:none; }
+
+/* header: brand left, ALL controls right. Controls never float over content. */
+header{ position:fixed; top:env(safe-area-inset-top,0px); left:0; right:0; z-index:12; height:var(--header-h);
+  display:flex; align-items:center; justify-content:space-between; gap:16px; padding:0 var(--gutter);
+  background:linear-gradient(to bottom, rgba(10,11,10,.85), rgba(10,11,10,0)); }
+.brand{ min-width:0; }
+.brand b{ display:block; font-family:var(--font-display); font-weight:500; font-size:17px; letter-spacing:-.01em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.brand span{ display:block; margin-top:2px; font-size:11.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-3); white-space:nowrap; }
+.controls{ display:flex; align-items:center; gap:10px; flex:none; }
+.ctl{ display:flex; align-items:center; gap:8px; height:34px; padding:0 12px; border:1px solid var(--line); border-radius:3px;
+  background:var(--panel); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); cursor:pointer; font-size:12.5px; color:var(--ink-2); }
+.ctl:hover,.ctl:focus-visible{ color:var(--ink); border-color:var(--line-2); }
+.ctl svg{ width:12px; height:12px; }
+#tcode{ font-size:11.5px; color:var(--ink-3); font-variant-numeric:tabular-nums; min-width:76px; text-align:right; }
+#topbar{ position:fixed; top:calc(env(safe-area-inset-top,0px) + var(--header-h)); left:0; right:0; height:2px; z-index:12; background:rgba(241,238,228,.08); }
+#topbar i{ display:block; height:100%; width:0; background:var(--accent); }
+
+/* opening: padded below the header so nothing can sit on the headline */
+#opening{ position:fixed; inset:0; z-index:6; display:flex; flex-direction:column; justify-content:center; pointer-events:none;
+  padding:calc(env(safe-area-inset-top,0px) + var(--header-h) + 32px) var(--gutter) calc(env(safe-area-inset-bottom,0px) + 72px);
+  background:linear-gradient(to bottom, rgba(10,11,10,.45), rgba(10,11,10,.72)); }
+#opening .inner{ width:100%; max-width:760px; margin:0 auto; }
+.eyebrow{ font-size:12.5px; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:var(--accent); }
+#opening h1{ margin:18px 0 0; font-family:var(--font-display); font-weight:500; font-size:clamp(40px,7.4vw,96px); line-height:1.0; letter-spacing:-.025em; }
+#opening p{ margin:22px 0 0; max-width:48ch; font-size:clamp(15px,1.4vw,17px); line-height:1.62; color:var(--ink-2); }
+.hint{ margin-top:32px; font-size:12px; color:var(--ink-3); display:flex; align-items:center; gap:10px; }
+.hint i{ display:block; width:1px; height:26px; background:linear-gradient(to bottom,var(--line-2),transparent); }
+
+/* HUD: stage card (left) and data panel (right) share one bottom row.
+   Cards and panels stack in a single grid cell, so the box is always as tall
+   as its tallest child and nothing overlaps by accident. */
+#hud{ position:fixed; z-index:8; left:var(--gutter); right:calc(var(--gutter) + 56px); bottom:calc(env(safe-area-inset-bottom,0px) + 32px);
+  display:flex; align-items:flex-end; justify-content:space-between; gap:24px; pointer-events:none; }
+.stack{ display:grid; }
+.stack > *{ grid-area:1/1; opacity:0; transform:translateY(12px); visibility:hidden;
+  transition:opacity .5s ease, transform .5s ease, visibility 0s linear .5s; }
+.stack > .on{ opacity:1; transform:none; visibility:visible; transition-delay:0s; }
+#cards{ width:min(460px,100%); }
+#panels{ width:min(400px,100%); }
+.card,.panel{ background:var(--panel); border:1px solid var(--line); border-radius:3px; backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); }
+.card{ padding:20px 24px 22px; }
+.card .step{ display:flex; align-items:center; gap:12px; font-size:12px; color:var(--ink-3); margin-bottom:12px; }
+.card .step em{ font-style:normal; font-weight:600; color:var(--accent); font-variant-numeric:tabular-nums; letter-spacing:.06em; }
+.card .step u{ text-decoration:none; flex:1; height:1px; background:var(--line); }
+.card h2{ margin:0 0 12px; font-family:var(--font-display); font-weight:500; font-size:clamp(24px,3vw,34px); line-height:1.08; letter-spacing:-.015em; }
+.card p{ margin:0; font-size:14.5px; line-height:1.65; color:var(--ink-2); }
+.panel{ padding:18px 20px 16px; }
+.panel h3{ margin:0 0 4px; font-family:var(--font-display); font-weight:500; font-size:17px; }
+.panel .src{ margin:0 0 12px; font-size:11px; line-height:1.45; color:var(--ink-3); }
+.panel .note{ margin:12px 0 0; padding-top:10px; border-top:1px solid var(--line); font-size:10.5px; line-height:1.5; color:var(--ink-3); }
+table.dt{ width:100%; border-collapse:collapse; font-size:12px; font-variant-numeric:tabular-nums; }
+table.dt th{ text-align:right; font-weight:500; color:var(--accent); padding:0 0 6px; border-bottom:1px solid var(--line); }
+table.dt td{ text-align:right; padding:4px 0; border-bottom:1px solid rgba(241,238,228,.07); }
+table.dt th:first-child, table.dt td:first-child{ text-align:left; color:var(--ink-2); }
+.bigstat{ font-family:var(--font-display); font-size:56px; font-weight:500; line-height:1; color:var(--accent); }
+
+/* rail: stage navigation, right edge, vertically centred */
+#rail{ position:fixed; z-index:10; right:calc(var(--gutter) - 10px); top:50%; transform:translateY(-50%);
+  display:flex; flex-direction:column; align-items:flex-end; padding:8px 10px 8px 4px;
+  background:rgba(10,11,10,.55); border:1px solid var(--line); border-radius:3px; backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); }
+#rail button{ display:flex; align-items:center; gap:10px; background:none; border:0; padding:7px 0 7px 10px; cursor:pointer; font-size:11.5px; color:var(--ink-3); }
+#rail button span{ opacity:0; transform:translateX(6px); transition:opacity .25s, transform .25s; white-space:nowrap; }
+#rail button:hover span,#rail button:focus-visible span,#rail button.on span{ opacity:1; transform:none; }
+#rail button i{ display:block; width:18px; height:1px; background:var(--line-2); transition:width .3s, background .3s; }
+#rail button.on{ color:var(--ink); }
+#rail button.on i{ width:34px; background:var(--accent); }
+
+/* 3D-anchored labels */
+#labels{ position:fixed; inset:0; z-index:5; pointer-events:none; }
+.label{ position:absolute; left:0; top:0; transform:translate(-50%,-100%); opacity:0; transition:opacity .3s; white-space:nowrap; text-align:center; }
+.label.on{ opacity:1; }
+.label span{ display:inline-block; padding:5px 9px; background:var(--panel); border:1px solid var(--line); border-radius:3px; }
+.label b{ display:block; font-size:11.5px; font-weight:500; }
+.label s{ display:block; text-decoration:none; font-size:10px; color:var(--ink-3); }
+.label:after{ content:""; display:block; width:1px; height:16px; margin:4px auto 0; background:linear-gradient(to bottom,var(--line-2),transparent); }
+
+/* reader dialog + static article share one renderer */
+#reader{ position:fixed; inset:0; z-index:20; overflow-y:auto; background:var(--bg); display:none;
+  padding:calc(env(safe-area-inset-top,0px) + 72px) var(--gutter) calc(env(safe-area-inset-bottom,0px) + 80px); }
+#reader.on{ display:block; }
+#reader .close{ position:fixed; top:calc(env(safe-area-inset-top,0px) + 16px); right:var(--gutter); }
+.article{ max-width:680px; margin:0 auto; }
+.article h1{ font-family:var(--font-display); font-weight:500; font-size:clamp(34px,6vw,60px); line-height:1.02; letter-spacing:-.02em; margin:14px 0 16px; }
+.article .lede{ color:var(--ink-2); font-size:16px; line-height:1.65; margin:0 0 48px; }
+.article section{ padding-top:26px; margin-bottom:40px; border-top:1px solid var(--line); }
+.article .n{ font-size:12px; font-weight:600; letter-spacing:.08em; color:var(--accent); margin-bottom:10px; }
+.article h2{ font-family:var(--font-display); font-weight:500; font-size:26px; margin:0 0 10px; }
+.article p{ color:var(--ink-2); font-size:15px; line-height:1.7; margin:0; }
+.article .plate{ height:clamp(140px,26vw,240px); border-radius:3px; margin:0 0 20px; border:1px solid var(--line); }
+.article .panel{ margin-top:20px; backdrop-filter:none; }
+.article .foot{ font-size:12.5px; line-height:1.6; color:var(--ink-3); border-top:1px solid var(--line); padding-top:20px; }
+
+/* STATIC MODE — no WebGL, blocked CDN, ?static=1, or a lost context.
+   The page becomes a normal readable article; every fixed layer goes away. */
+#article{ display:none; }
+html.static #scene, html.static #veil, html.static #opening, html.static #hud, html.static #rail,
+html.static #labels, html.static #cut, html.static #topbar, html.static #track, html.static .controls .motion{ display:none !important; }
+html.static #article{ display:block; padding:calc(env(safe-area-inset-top,0px) + var(--header-h) + 40px) var(--gutter) 96px; }
+html.static header{ background:var(--bg); border-bottom:1px solid var(--line); }
+
+@media (max-width:820px){
+  :root{ --header-h:56px; }
+  .brand span{ display:none; }
+  #tcode{ display:none; }
+  #hud{ right:var(--gutter); flex-direction:column; align-items:stretch; gap:10px; bottom:calc(env(safe-area-inset-bottom,0px) + 18px); }
+  #cards,#panels{ width:100%; }
+  #panels{ order:-1; max-height:38vh; }
+  .panel{ max-height:38vh; overflow:auto; }
+  .card p{ font-size:13.5px; }
+  #rail{ display:none; }
+  .label s{ display:none; }
+}
+@media (max-height:560px){ .card p{ display:none; } #panels{ display:none; } }
+@media (prefers-reduced-motion:reduce){ .stack > *{ transition:opacity .01s; } }
+</style>
+</head>
+<body>
+
+<div id="scene" aria-hidden="true"></div>
+<div id="veil"></div>
+<div id="labels" aria-hidden="true"></div>
+<div id="cut"></div>
+
+<header>
+  <div class="brand"><b id="brandTitle"></b><span id="brandSub"></span></div>
+  <div class="controls">
+    <button class="ctl motion" id="play" aria-label="Pause"></button>
+    <span id="tcode" class="motion">0:00 / 0:00</span>
+    <button class="ctl" id="openReader">Read as text</button>
+  </div>
+</header>
+<div id="topbar"><i id="topfill"></i></div>
+
+<div id="opening">
+  <div class="inner">
+    <div class="eyebrow" id="openEyebrow"></div>
+    <h1 id="openTitle"></h1>
+    <p id="openLede"></p>
+    <div class="hint"><i></i><span id="hintText">Plays automatically · scroll to take over</span></div>
+  </div>
+</div>
+
+<div id="hud">
+  <div id="cards" class="stack" aria-live="polite"></div>
+  <div id="panels" class="stack"></div>
+</div>
+<nav id="rail" aria-label="Stages"></nav>
+
+<div id="track"></div>
+<main id="article"></main>
+
+<div id="reader" role="dialog" aria-modal="true" aria-label="Text version">
+  <button class="ctl close" id="closeReader">Close</button>
+  <div id="readerBody"></div>
+</div>
+
+<!-- Pinned UMD build. r128 is the last version cdnjs serves as a single browser-global file. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+"use strict";
+
+/* =====================================================================
+   1. STORY — all copy and all per-stage direction lives here.
+   cam.p = camera position, cam.l = look-at point (scene units).
+   scene = numeric targets the scene reads each frame (interpolated).
+   panel = id of a PANELS entry shown while the stage is active.
+   labels = 3D-anchored callouts shown while the stage is active.
+   tone = colour of this stage's plate in static mode.
+   ===================================================================== */
+var STORY = {
+  brand: "Project name · Section A",
+  brandSub: "Site · what this section covers",
+  eyebrow: "Section A",
+  title: "From sand<br>to working ground.",
+  lede: "One sentence that says where we are, what changes, and what the viewer will see by the end.",
+  foot: "Sources, caveats and what is deliberately left out go here. This line closes the reader and the static article.",
+  intro: { cam:{ p:[170,190,260], l:[0,0,0] }, scene:{ life:0, bands:0, grow:0 } },
+  stages: [
+    { nav:"The site", title:"The site", tone:"#2a2620",
+      body:"Establish the place. Wide, high, slow. One fact the viewer should hold for the rest of the piece.",
+      cam:{ p:[120,150,190], l:[0,0,0] }, scene:{ life:0, bands:0.25, grow:0 },
+      labels:[ { text:"Plot boundary", sub:"surveyed outline", at:[0,4,-95] } ] },
+    { nav:"The treatment", title:"The treatment", tone:"#2c2a1f",
+      body:"Move closer as the process starts. The ground begins to change under the camera, driven by one scene value.",
+      cam:{ p:[70,60,95], l:[0,0,0] }, scene:{ life:0.45, bands:1, grow:0 }, panel:"lab" },
+    { nav:"Biology", title:"Biology takes hold", tone:"#1d2a22",
+      body:"Low and close. This is where evidence belongs: the panel on the right carries the numbers so the card can stay short.",
+      cam:{ p:[34,18,52], l:[0,2,0] }, scene:{ life:0.8, bands:1, grow:0.35 }, panel:"count" },
+    { nav:"Working land", title:"Working land", tone:"#163026",
+      body:"Pull back to the full parcel. Everything planted, everything measured. Hand off to the next section.",
+      cam:{ p:[150,175,240], l:[0,0,0] }, scene:{ life:1, bands:0.6, grow:1 }, panel:"plants" }
+  ]
+};
+
+/* Data panels: plain HTML, reused by the HUD, the reader and the static article. */
+var PANELS = {
+  lab: '<h3>Soil analysis</h3><p class="src">Lab name · sampled date · report numbers</p>'+
+       '<table class="dt"><tr><th>Parameter</th><th>Before</th><th>After</th></tr>'+
+       '<tr><td>pH</td><td>9.8</td><td>9.4</td></tr><tr><td>Organic matter %</td><td>0.15</td><td>0.44</td></tr>'+
+       '<tr><td>EC µS/cm</td><td>372</td><td>205</td></tr></table>'+
+       '<p class="note">Placeholder values. Replace with sourced figures before publishing.</p>',
+  count: '<h3>Bacterial count</h3><p class="src">CFU/g · log scale</p><div class="bigstat">10⁸</div>'+
+         '<p class="note">Placeholder. Keep every number traceable to a report.</p>',
+  plants: '<h3>Planting</h3><p class="src">Species · count · share</p>'+
+          '<table class="dt"><tr><th>Species</th><th>Count</th><th>Share</th></tr>'+
+          '<tr><td>Species A</td><td>4,000</td><td>50%</td></tr><tr><td>Species B</td><td>3,600</td><td>45%</td></tr>'+
+          '<tr><td>Species C</td><td>400</td><td>5%</td></tr></table>'
+};
+
+
+/* Optional: a pre-rendered frame sequence instead of a live 3D scene (CONFIG.sceneMode = "frames").
+   Frames are image URLs (artifact assets "/_blob/<id>" or data: URIs). Stages drive scene.frame (0..1),
+   so the footage holds while the reader reads, exactly like the camera does in 3D mode. */
+var FRAMES = { urls: [], mobileUrls: [], fit: "cover" };
+
+/* =====================================================================
+   2. CONFIG
+   ===================================================================== */
+var CONFIG = {
+  sceneMode: "three",      // "three" = live Three.js scene · "frames" = scrubbed image sequence
+  autoplay: true,          // starts after a short delay; any scroll/key takes over
+  introSeconds: 4,         // opening hold in autoplay
+  secondsPerStage: 11,     // autoplay time per stage
+  scrollPerStage: 130,     // vh of scroll per stage in manual mode
+  introShare: 0.05,        // share of the timeline used by the opening
+  arrive: 0.30, leave: 0.88, // inside each stage: camera arrives at 30%, starts leaving at 88%
+  damping: 0.09,           // render smoothing toward the exact scroll position (1 = none)
+  maxDPR: 1.75, maxDPRSmall: 1.5, minDPR: 1, // adaptive quality steps down from the cap, never back up
+  slowFrameMs: 34          // a window averaging slower than this (under ~30 fps) counts as bad
+};
+
+/* =====================================================================
+   3. HELPERS
+   ===================================================================== */
+function $(id){ return document.getElementById(id); }
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function lerp(a,b,t){ return a+(b-a)*t; }
+function lerp3(out,a,b,t){ out[0]=lerp(a[0],b[0],t); out[1]=lerp(a[1],b[1],t); out[2]=lerp(a[2],b[2],t); return out; }
+function smooth(t){ t=clamp(t,0,1); return t*t*(3-2*t); }
+function smoothRange(e0,e1,x){ return smooth((x-e0)/(e1-e0)); }
+function pad2(n){ return (n<10?"0":"")+n; }
+function mmss(s){ s=Math.max(0,Math.round(s)); return Math.floor(s/60)+":"+pad2(s%60); }
+var QS = location.search;
+var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+var saveData = !!(navigator.connection && navigator.connection.saveData);
+var N = STORY.stages.length;
+
+/* =====================================================================
+   4. DOM — built from STORY, so copy is never duplicated by hand
+   ===================================================================== */
+$("brandTitle").innerHTML = STORY.brand; $("brandSub").innerHTML = STORY.brandSub;
+$("openEyebrow").innerHTML = STORY.eyebrow; $("openTitle").innerHTML = STORY.title; $("openLede").innerHTML = STORY.lede;
+document.title = STORY.title.replace(/<br\s*\/?>/g," ").replace(/<[^>]+>/g,"") + " · " + STORY.brand;
+
+var cardEls = STORY.stages.map(function(s,i){
+  var d=document.createElement("div"); d.className="card"; d.setAttribute("aria-hidden","true");
+  d.innerHTML='<div class="step"><em>'+pad2(i+1)+'</em><u></u></div><h2>'+s.title+'</h2><p>'+s.body+'</p>';
+  $("cards").appendChild(d); return d;
+});
+var panelEls = {};
+Object.keys(PANELS).forEach(function(k){
+  var d=document.createElement("div"); d.className="panel"; d.innerHTML=PANELS[k]; d.setAttribute("aria-hidden","true");
+  $("panels").appendChild(d); panelEls[k]=d;
+});
+
+function articleHTML(){
+  var h='<div class="article"><div class="eyebrow">'+STORY.eyebrow+'</div><h1>'+STORY.title.replace(/<br\s*\/?>/g," ")+'</h1><p class="lede">'+STORY.lede+'</p>';
+  STORY.stages.forEach(function(s,i){
+    var plate = s.still
+      ? '<img class="plate" src="'+s.still+'" alt="" style="width:100%;object-fit:cover">'
+      : '<div class="plate" style="background:linear-gradient(135deg,'+(s.tone||"#1a1d1a")+',#0A0B0A)"></div>';
+    h+='<section id="stage-'+(i+1)+'">'+plate+'<div class="n">'+pad2(i+1)+'</div><h2>'+s.title+'</h2><p>'+s.body+'</p>'+
+       (s.panel && PANELS[s.panel] ? '<div class="panel">'+PANELS[s.panel]+'</div>' : '')+'</section>';
+  });
+  return h+'<p class="foot">'+STORY.foot+'</p></div>';
+}
+$("readerBody").innerHTML = articleHTML();
+$("openReader").addEventListener("click",function(){
+  if(document.documentElement.classList.contains("static")){ window.scrollTo({top:0,behavior:"smooth"}); return; }
+  $("reader").classList.add("on"); $("closeReader").focus();
+});
+$("closeReader").addEventListener("click",function(){ $("reader").classList.remove("on"); });
+document.addEventListener("keydown",function(e){ if(e.key==="Escape") $("reader").classList.remove("on"); });
+
+/* =====================================================================
+   5. STATIC MODE — one function, called from every failure path.
+   Test every path: ?static=1, ?fail=scene, WebGL disabled.
+   ===================================================================== */
+var isStatic=false;
+function goStatic(reason){
+  if(isStatic) return; isStatic=true;
+  document.documentElement.classList.add("static");
+  $("article").innerHTML = articleHTML();
+  $("openReader").textContent = "Top";
+  var m = /^#stage-(\d+)$/.exec(location.hash);
+  if(m && $("stage-"+m[1])) $("stage-"+m[1]).scrollIntoView(); else window.scrollTo(0,0);
+  if(window.console) console.info("[scroll-cinema] static mode:", reason);
+}
+function hasWebGL(){
+  try{ var c=document.createElement("canvas");
+    return !!(window.WebGLRenderingContext && (c.getContext("webgl2")||c.getContext("webgl")||c.getContext("experimental-webgl")));
+  }catch(e){ return false; }
+}
+var THREE_MODE = CONFIG.sceneMode !== "frames";
+if(/[?&]static=1/.test(QS)){ goStatic("forced by ?static=1"); return; }
+if(THREE_MODE && typeof THREE==="undefined"){ goStatic("three.js did not load"); return; }
+if(THREE_MODE && !hasWebGL()){ goStatic("no WebGL"); return; }
+
+/* =====================================================================
+   6. TIMELINE — progress p in [0,1]
+   [0, introShare] opening · then N equal stage slots.
+   Camera/scene keys: intro at 0; each stage holds from arrive to leave.
+   ===================================================================== */
+var P0 = CONFIG.introShare, W = (1-P0)/N;
+function stageStart(i){ return P0 + W*i; }
+function stageArrive(i){ return stageStart(i) + W*CONFIG.arrive; }
+function stageLeave(i){ return stageStart(i) + W*CONFIG.leave; }
+
+var KEYS = [{ p:0, cam:STORY.intro.cam, scene:STORY.intro.scene },{ p:P0*0.6, cam:STORY.intro.cam, scene:STORY.intro.scene }];
+(function(){
+  var carry = Object.assign({}, STORY.intro.scene);
+  STORY.stages.forEach(function(s,i){
+    carry = Object.assign({}, carry, s.scene||{});
+    KEYS.push({ p:stageArrive(i), cam:s.cam||KEYS[KEYS.length-1].cam, scene:Object.assign({},carry) });
+    KEYS.push({ p:stageLeave(i),  cam:s.cam||KEYS[KEYS.length-1].cam, scene:Object.assign({},carry) });
+  });
+  KEYS[KEYS.length-1].p = 1;
+})();
+function sampleKeys(p){
+  for(var i=1;i<KEYS.length;i++){
+    if(p<=KEYS[i].p){ var a=KEYS[i-1], b=KEYS[i]; var u=(b.p-a.p)>0 ? smooth((p-a.p)/(b.p-a.p)) : 1; return {a:a,b:b,u:u}; }
+  }
+  var k=KEYS[KEYS.length-1]; return {a:k,b:k,u:1};
+}
+function activeStageAt(p){
+  if(p < P0*0.8) return -1;
+  return clamp(Math.floor((p-P0)/W), 0, N-1);
+}
+
+/* autoplay clock <-> progress (piecewise linear; holds come from the keys) */
+var DUR = CONFIG.introSeconds + N*CONFIG.secondsPerStage;
+function pAtTime(t){ return t<=CONFIG.introSeconds ? P0*(t/CONFIG.introSeconds) : P0 + (1-P0)*clamp((t-CONFIG.introSeconds)/(N*CONFIG.secondsPerStage),0,1); }
+function timeAtP(p){ return p<=P0 ? CONFIG.introSeconds*(p/P0) : CONFIG.introSeconds + (p-P0)/(1-P0)*N*CONFIG.secondsPerStage; }
+
+/* =====================================================================
+   7. SCENE — replace this block per project. The engine needs:
+      draw(values, time, camPos, camLook)   called every frame
+      resize(w, h)                          called after a real resize
+      setDPR(r)                             adaptive quality hook (may be a no-op)
+      project(vec3) -> {x,y,visible}        for 3D labels (optional)
+   ===================================================================== */
+var SMALL = window.innerWidth < 820;
+var dpr = Math.min(window.devicePixelRatio||1, SMALL?CONFIG.maxDPRSmall:CONFIG.maxDPR);
+if(saveData) dpr = Math.min(dpr, 1);
+var SCENE = null;
+
+function buildThreeScene(){
+  if(/[?&]fail=scene/.test(QS)) throw new Error("injected scene failure");
+  var renderer = new THREE.WebGLRenderer({ antialias:true, powerPreference:"high-performance" });
+  renderer.setPixelRatio(dpr);
+  renderer.setSize(window.innerWidth, window.innerHeight, false);
+  $("scene").appendChild(renderer.domElement);
+  renderer.domElement.addEventListener("webglcontextlost", function(e){ e.preventDefault(); goStatic("WebGL context lost"); }, false);
+
+  var scene = new THREE.Scene();
+  var SKY_DEAD = new THREE.Color(0x2a2620), SKY_LIVE = new THREE.Color(0x16201b);
+  scene.background = SKY_DEAD.clone();
+  scene.fog = new THREE.Fog(SKY_DEAD.clone(), 260, 620);
+  var camera = new THREE.PerspectiveCamera(40, window.innerWidth/window.innerHeight, 0.5, 1500);
+  scene.add(new THREE.HemisphereLight(0xf2e6cc, 0x1e1a14, 0.95));
+  var sun = new THREE.DirectionalLight(0xffecc8, 0.9); sun.position.set(140,200,90); scene.add(sun);
+
+  function terrH(x,z){
+    var r=Math.sqrt(x*x+z*z);
+    var dunes = 2.2*Math.sin(x*0.035+Math.sin(z*0.02)*1.4) + 1.3*Math.sin(z*0.05+1.1);
+    var mound = 9*Math.exp(-(r*r)/(2*22*22));
+    return dunes*0.6 + mound;
+  }
+  var U = { uLife:{value:0}, uBands:{value:0}, uTime:{value:0},
+            uSand:{value:new THREE.Color(0xd8c39a)}, uLoam:{value:new THREE.Color(0x3a2c1e)},
+            uGreen:{value:new THREE.Color(0x3DAE5A)}, uSun:{value:new THREE.Vector3(140,200,90).normalize()} };
+  var geo = new THREE.PlaneGeometry(520,520, SMALL?140:200, SMALL?140:200); geo.rotateX(-Math.PI/2);
+  (function(){ var p=geo.attributes.position; for(var i=0;i<p.count;i++) p.setY(i, terrH(p.getX(i),p.getZ(i))); p.needsUpdate=true; geo.computeVertexNormals(); })();
+  var mat = new THREE.ShaderMaterial({ uniforms:U,
+    vertexShader:"varying vec3 vPos; varying vec3 vNrm; void main(){ vPos=position; vNrm=normal; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }",
+    fragmentShader:[
+      "precision highp float; varying vec3 vPos; varying vec3 vNrm;",
+      "uniform float uLife,uBands,uTime; uniform vec3 uSand,uLoam,uGreen,uSun;",
+      "float h(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }",
+      "float n(vec2 p){ vec2 i=floor(p),f=fract(p); vec2 u=f*f*(3.0-2.0*f);",
+      "  return mix(mix(h(i),h(i+vec2(1,0)),u.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),u.x),u.y); }",
+      "void main(){ vec2 q=vPos.xz; float r=length(q);",
+      "  float inside=1.0-smoothstep(95.0,105.0,max(abs(q.x),abs(q.y)));",
+      "  float n1=n(q*0.06), n2=n(q*0.5);",
+      "  vec3 col=uSand*(0.88+0.2*n1)*(0.94+0.1*n2);",
+      "  float grow=smoothstep(0.0,1.0,uLife*1.25-(r/150.0)*0.5);",
+      "  col=mix(col,uLoam*(0.85+0.35*n1),grow*inside);",
+      "  col=mix(col,uGreen*(0.55+0.3*n2),grow*inside*0.35*uLife);",
+      "  float bf=fract(r/14.0); float band=1.0-smoothstep(0.0,0.05,min(bf,1.0-bf));",
+      "  float pulse=0.5+0.5*sin(r*0.3-uTime*1.8);",
+      "  col=mix(col,uGreen,band*uBands*inside*(0.35+0.4*pulse));",
+      "  float edge=1.0-smoothstep(0.0,1.2,abs(max(abs(q.x),abs(q.y))-100.0));",
+      "  col=mix(col,vec3(0.95,0.93,0.88),edge*0.7);",
+      "  float d=max(dot(normalize(vNrm),uSun),0.0); col*=0.45+0.7*d;",
+      "  gl_FragColor=vec4(col,1.0); }"].join("\n")
+  });
+  scene.add(new THREE.Mesh(geo, mat));
+
+  /* instanced plants that grow in rings, outer rings last */
+  var COUNT = SMALL?260:520;
+  var pGeo = new THREE.ConeGeometry(1.6,5,6); pGeo.translate(0,2.5,0);
+  var plants = new THREE.InstancedMesh(pGeo, new THREE.MeshLambertMaterial({ color:0x3f9a57 }), COUNT);
+  var base=[], m4=new THREE.Matrix4(), q4=new THREE.Quaternion(), v3=new THREE.Vector3(), s3=new THREE.Vector3();
+  for(var i=0;i<COUNT;i++){
+    var ang=Math.random()*Math.PI*2, rr=20+Math.sqrt(Math.random())*72;
+    var x=Math.cos(ang)*rr, z=Math.sin(ang)*rr;
+    base.push({ x:x, y:terrH(x,z), z:z, s:0.7+Math.random()*0.7, d:(rr-20)/72*0.6 + Math.random()*0.15 });
+  }
+  scene.add(plants);
+  var lastGrow=-1;
+  function plantsUpdate(g){
+    if(Math.abs(g-lastGrow)<0.002) return; lastGrow=g;
+    for(var i=0;i<COUNT;i++){ var b=base[i]; var k=Math.max(smooth((g-b.d)/0.35)*b.s, 0.0001);
+      v3.set(b.x,b.y,b.z); s3.set(k,k,k); m4.compose(v3,q4,s3); plants.setMatrixAt(i,m4); }
+    plants.instanceMatrix.needsUpdate=true;
+  }
+
+  var proj = new THREE.Vector3();
+  return {
+    draw: function(v, t, cp, cl){
+      camera.position.set(cp[0],cp[1],cp[2]); camera.lookAt(cl[0],cl[1],cl[2]);
+      U.uLife.value=v.life||0; U.uBands.value=v.bands||0; U.uTime.value=t;
+      plantsUpdate(v.grow||0);
+      scene.background.copy(SKY_DEAD).lerp(SKY_LIVE, v.life||0);
+      scene.fog.color.copy(scene.background);
+      renderer.render(scene,camera);
+    },
+    resize: function(w,h){ camera.aspect=w/h; camera.updateProjectionMatrix(); renderer.setSize(w,h,false); },
+    setDPR: function(r){ renderer.setPixelRatio(r); renderer.setSize(window.innerWidth, window.innerHeight, false); },
+    project: function(at){ proj.set(at[0],at[1],at[2]).project(camera);
+      return { x:(proj.x*0.5+0.5)*window.innerWidth, y:(-proj.y*0.5+0.5)*window.innerHeight,
+               visible: proj.z<1 && Math.abs(proj.x)<0.9 && Math.abs(proj.y)<0.8 }; }
+  };
+}
+
+/* Frame-sequence scene: a 2D canvas that paints the nearest loaded frame, cover-fitted. */
+function buildFrameScene(){
+  if(/[?&]fail=(scene|frames)/.test(QS)) throw new Error("injected frames failure");
+  var list = (SMALL && FRAMES.mobileUrls.length) ? FRAMES.mobileUrls : FRAMES.urls;
+  if(!list.length) throw new Error("FRAMES.urls is empty");
+  var canvas=document.createElement("canvas"); $("scene").appendChild(canvas);
+  var ctx=canvas.getContext("2d"), imgs=new Array(list.length), loaded=0, failed=0, lastIdx=-1, lastDrawn=null;
+  function size(){ canvas.width=Math.round(window.innerWidth*dpr); canvas.height=Math.round(window.innerHeight*dpr); lastIdx=-1; }
+  size();
+  /* load the first frame and every stage's first frame first, then the rest in order */
+  var order=[0]; KEYS.forEach(function(k){ if(k.scene.frame!==undefined) order.push(Math.round(k.scene.frame*(list.length-1))); });
+  for(var i=0;i<list.length;i++) order.push(i);
+  var seen={}; order=order.filter(function(i){ if(seen[i]) return false; seen[i]=1; return true; });
+  order.forEach(function(i){ var im=new Image(); im.decoding="async";
+    im.onload=function(){ imgs[i]=im; loaded++; }; im.onerror=function(){ failed++; if(failed>list.length*0.2) goStatic("frames failed to load"); };
+    im.src=list[i]; });
+  function nearest(idx){ for(var d=0; d<list.length; d++){ if(imgs[idx-d]) return imgs[idx-d]; if(imgs[idx+d]) return imgs[idx+d]; } return null; }
+  return {
+    draw: function(v){
+      var idx=Math.round(clamp(v.frame||0,0,1)*(list.length-1));
+      var im=imgs[idx]||nearest(idx); if(!im || (idx===lastIdx && im===lastDrawn)) return;
+      var cw=canvas.width, ch=canvas.height, r=Math.max(cw/im.naturalWidth, ch/im.naturalHeight);
+      if(FRAMES.fit==="contain") r=Math.min(cw/im.naturalWidth, ch/im.naturalHeight);
+      var w=im.naturalWidth*r, h=im.naturalHeight*r;
+      ctx.fillStyle="#0A0B0A"; ctx.fillRect(0,0,cw,ch); ctx.drawImage(im,(cw-w)/2,(ch-h)/2,w,h);
+      lastIdx=idx; lastDrawn=im;
+    },
+    resize: function(){ size(); },
+    setDPR: function(){ size(); },
+    project: function(){ return { visible:false }; }
+  };
+}
+
+try{ SCENE = THREE_MODE ? buildThreeScene() : buildFrameScene(); }
+catch(err){ goStatic("scene build failed: "+(err&&err.message)); return; }
+
+/* rail (motion mode only) */
+var railEls = STORY.stages.map(function(s,i){
+  var b=document.createElement("button"); b.innerHTML='<span>'+s.nav+'</span><i></i>';
+  b.setAttribute("aria-label","Stage "+(i+1)+": "+s.nav);
+  b.addEventListener("click",function(){ goManual(); scrollToProgress(stageArrive(i)); });
+  $("rail").appendChild(b); return b;
+});
+
+/* labels */
+var labelItems=[];
+STORY.stages.forEach(function(s,i){ (s.labels||[]).forEach(function(l){
+  var d=document.createElement("div"); d.className="label"; d.innerHTML='<span><b>'+l.text+'</b>'+(l.sub?'<s>'+l.sub+'</s>':'')+'</span>';
+  $("labels").appendChild(d); labelItems.push({ el:d, stage:i, at:l.at });
+}); });
+
+/* =====================================================================
+   8. PLAYBACK
+   Two states, never mixed up:
+     target   = EXACT progress (scroll position or autoplay clock). Drives meaning:
+                which stage card, panel, rail item, URL hash.
+     progress = RENDER progress, eased toward target. Drives visuals only.
+   ===================================================================== */
+var track=$("track"), playBtn=$("play");
+track.style.height = (100 + N*CONFIG.scrollPerStage) + "vh";
+var ICON_PLAY='<svg viewBox="0 0 12 14"><path d="M0 0L12 7L0 14Z" fill="currentColor"/></svg><span>Play</span>';
+var ICON_PAUSE='<svg viewBox="0 0 12 14"><path d="M0 0h4v14H0zM8 0h4v14H8z" fill="currentColor"/></svg><span>Pause</span>';
+var mode = "manual", playing=false, autoT=0, progress=0, target=0;
+function maxScroll(){ return Math.max(1, track.offsetHeight - window.innerHeight); }
+function scrollToProgress(p, instant){ window.scrollTo({ top:p*maxScroll(), behavior:(reduceMotion||instant)?"auto":"smooth" }); }
+function setPlaying(v){ playing=v; playBtn.innerHTML=v?ICON_PAUSE:ICON_PLAY; playBtn.setAttribute("aria-label",v?"Pause":"Play"); }
+function goManual(){ if(mode==="auto"){ mode="manual"; setPlaying(false); } }
+function goAuto(){ mode="auto"; autoT = target>=0.999 ? 0 : timeAtP(target); setPlaying(true); }
+playBtn.addEventListener("click", function(){ if(playing) goManual(); else goAuto(); });
+["wheel","touchstart"].forEach(function(ev){ window.addEventListener(ev, function(e){ if(!e.target.closest || !e.target.closest("header,#reader,#debug")) goManual(); }, {passive:true}); });
+window.addEventListener("keydown", function(e){ if(["ArrowDown","ArrowUp","PageDown","PageUp","Home","End"," "].indexOf(e.key)>=0) goManual(); });
+window.addEventListener("scroll", function(){ if(mode==="manual") target = clamp(window.scrollY/maxScroll(),0,1); }, {passive:true});
+
+/* Resize: keep the exact story position. Height-only changes under 160px are the mobile
+   address bar showing or hiding; ignore them so the canvas does not reallocate mid-scroll. */
+var lastW=window.innerWidth, lastH=window.innerHeight, resizeT=0;
+window.addEventListener("resize", function(){
+  clearTimeout(resizeT);
+  resizeT=setTimeout(function(){
+    var w=window.innerWidth, h=window.innerHeight;
+    if(w===lastW && Math.abs(h-lastH)<160) return;
+    lastW=w; lastH=h;
+    var keep=target;
+    SCENE.resize(w,h);
+    window.scrollTo(0, keep*maxScroll());
+    target=keep; progress=keep;
+  }, 150);
+});
+
+/* Deep link: #stage-3 opens on stage 3, without autoplay. */
+var startStage = (function(){ var m=/^#stage-(\d+)$/.exec(location.hash); return m ? clamp(parseInt(m[1],10)-1,0,N-1) : -1; })();
+setPlaying(false);
+if(startStage>=0){
+  target=progress=stageArrive(startStage);
+  requestAnimationFrame(function(){ scrollToProgress(target, true); });
+  $("hintText").textContent = "Scroll to continue";
+}else if(CONFIG.autoplay && !reduceMotion){
+  setTimeout(function(){ if(mode==="manual" && target<0.01) goAuto(); }, 900);
+}else{ $("hintText").textContent = "Scroll to begin"; }
+
+/* =====================================================================
+   9. DEBUG HUD — ?debug=1. Drag the slider to pose each stage; copy the
+   camera of the current frame straight into STORY.
+   ===================================================================== */
+var debugEl=null;
+if(/[?&]debug=1/.test(QS)){
+  debugEl=document.createElement("div"); debugEl.id="debug";
+  debugEl.style.cssText="position:fixed;z-index:13;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + var(--header-h) + 10px);"+
+    "display:flex;gap:10px;align-items:center;padding:8px 12px;background:rgba(0,0,0,.8);border:1px solid var(--line);border-radius:3px;font:11px/1.4 ui-monospace,monospace;color:#cfd";
+  debugEl.innerHTML='<input id="dbgRange" type="range" min="0" max="1" step="0.001" style="width:220px"><span id="dbgText"></span><button class="ctl" id="dbgCopy" style="height:26px">Copy cam</button>';
+  document.body.appendChild(debugEl);
+  $("dbgRange").addEventListener("input", function(e){ goManual(); var p=parseFloat(e.target.value); window.scrollTo(0,p*maxScroll()); target=p; });
+  $("dbgCopy").addEventListener("click", function(){
+    var t='cam:{ p:['+camPos.map(function(v){return v.toFixed(1);}).join(",")+'], l:['+camLook.map(function(v){return v.toFixed(1);}).join(",")+'] }';
+    if(navigator.clipboard) navigator.clipboard.writeText(t).catch(function(){}); console.log(t);
+  });
+}
+
+/* =====================================================================
+   10. FRAME
+   ===================================================================== */
+var camPos=[0,0,0], camLook=[0,0,0], sceneVals={}, elapsed=0, hidden=false, activeStage=-2, lastStamp=performance.now();
+var winSum=0, winN=0, badWindows=0, lastHash="";
+document.addEventListener("visibilitychange", function(){ hidden=document.hidden; lastStamp=performance.now(); });
+window.__cinema = { state:function(){ return { target:target, progress:progress, stage:activeStage, mode:mode, dpr:dpr, isStatic:isStatic, sceneMode:CONFIG.sceneMode }; },
+                    goManual:goManual, stageArrive:stageArrive };
+window.__goManual = goManual;
+
+function frame(now){
+  requestAnimationFrame(frame);
+  if(hidden || isStatic) return;
+  now = now || performance.now();
+  var dt=Math.min((now-lastStamp)/1000, 0.05), rawDt=(now-lastStamp); lastStamp=now;
+  elapsed += reduceMotion?0:dt;
+
+  if(mode==="auto"){
+    if(playing){ autoT+=dt; if(autoT>=DUR){ autoT=DUR; setPlaying(false); mode="manual"; } }
+    target=pAtTime(autoT); progress=target;
+    window.scrollTo(0, target*maxScroll());
+  }else{
+    progress += (target-progress)*(reduceMotion?1:CONFIG.damping);
+    if(Math.abs(target-progress)<0.00005) progress=target;
+  }
+
+  /* visuals follow RENDER progress */
+  var k=sampleKeys(progress);
+  if(k.a.cam && k.b.cam){ lerp3(camPos,k.a.cam.p,k.b.cam.p,k.u); lerp3(camLook,k.a.cam.l,k.b.cam.l,k.u); }
+  for(var key in k.b.scene){ var a=(k.a.scene[key]!==undefined?k.a.scene[key]:0); sceneVals[key]=lerp(a,k.b.scene[key],k.u); }
+  SCENE.draw(sceneVals, elapsed, camPos, camLook);
+
+  $("opening").style.opacity = String(1 - smoothRange(P0*0.1, P0*0.8, progress));
+  $("topfill").style.width = (target*100)+"%";
+  $("tcode").textContent = mmss(timeAtP(target))+" / "+mmss(DUR);
+  if(debugEl){ $("dbgRange").value=target; $("dbgText").textContent="p "+target.toFixed(3)+" · stage "+(activeStage+1)+" · dpr "+dpr+" · "+Math.round(1000/Math.max(rawDt,1))+" fps"; }
+
+  /* meaning follows EXACT progress */
+  var st=activeStageAt(target);
+  if(st!==activeStage){
+    activeStage=st;
+    cardEls.forEach(function(el,i){ var on=i===st; el.classList.toggle("on",on); el.setAttribute("aria-hidden",on?"false":"true"); });
+    railEls.forEach(function(el,i){ el.classList.toggle("on",i===st); });
+    var pid = st>=0 ? STORY.stages[st].panel : null;
+    Object.keys(panelEls).forEach(function(id){ var on=id===pid; panelEls[id].classList.toggle("on",on); panelEls[id].setAttribute("aria-hidden",on?"false":"true"); });
+    var hash = st>=0 ? "#stage-"+(st+1) : "";
+    if(hash!==lastHash && mode==="manual"){ lastHash=hash; try{ history.replaceState(null,"",hash||location.pathname+location.search); }catch(e){} }
+  }
+
+  /* 3D labels: shown for the active stage, hidden off screen or behind the camera */
+  labelItems.forEach(function(L){
+    var show = L.stage===st;
+    if(show){ var pr=SCENE.project(L.at); show=pr.visible; if(show) L.el.style.transform="translate("+pr.x+"px,"+pr.y+"px) translate(-50%,-100%)"; }
+    L.el.classList.toggle("on",show);
+  });
+
+  /* adaptive quality: step the pixel ratio down after two slow windows; never step back up
+     (oscillating quality looks worse than steady lower quality) */
+  if(rawDt<250){ winSum+=rawDt; winN++; }
+  if(winN>=90){
+    var avg=winSum/winN; winSum=0; winN=0;
+    badWindows = avg>CONFIG.slowFrameMs ? badWindows+1 : 0;
+    if(badWindows>=2 && dpr>CONFIG.minDPR){ dpr=Math.max(CONFIG.minDPR, Math.round((dpr-0.25)*100)/100); SCENE.setDPR(dpr); badWindows=0; }
+  }
+}
+requestAnimationFrame(frame);
+
+})();
+</script>
+</body>
+</html>
